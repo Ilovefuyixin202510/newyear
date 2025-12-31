@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 新年快乐</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        /* 背景图层 */
+        .bg-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            /* ✅ 已添加背景图 */
+            background: url('./岁家.jpg') no-repeat center center;
+            background-size: cover;
+        }
+        
+        /* 半透明遮罩，让文字更清晰（可调整透明度或删除） */
+        .bg-placeholder::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3); 
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* 文字层 */
+        .title-3d {
+            position: relative;
+            z-index: 2;
+            font-size: 15vw;
+            font-weight: 900;
+            color: #f7e7ce;
+            text-shadow: 
+                0 2px 0 #d4af37,
+                0 4px 0 #c49f27,
+                0 6px 0 #b48f17,
+                0 8px 0 #a47f07,
+                0 10px 20px rgba(0,0,0,0.6);
+            animation: float 3s infinite ease-in-out;
+            user-select: none;
+            margin: 0;
+            text-align: center;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* Miku 贴图层 */
+        .miku-placeholder {
+            position: absolute;
+            right: 5%; 
+            bottom: 80px; 
+            width: 120px; 
+            z-index: 3;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: miku-sway 4s infinite ease-in-out;
+        }
+        
+        .miku-placeholder img {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5));
+        }
+
+        @keyframes miku-sway {
+            0%, 100% { transform: rotate(5deg) translateY(0); }
+            50% { transform: rotate(-5deg) translateY(-10px); }
+        }
+
+        .hint {
+            position: absolute;
+            bottom: 30px;
+            color: #f7e7ce;
+            z-index: 4;
+            font-size: 16px;
+            letter-spacing: 1px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(247, 231, 206, 0.3);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-placeholder"></div>
+
+    <canvas id="canvas"></canvas>
+    
+    <h1 class="title-3d">2026快乐!</h1>
+
+    <!-- ✅ 已添加 Miku 图片 -->
+    <div class="miku-placeholder">
+        <img src="./q版miku.jpg" alt="Miku">
+    </div>
+
+    <div class="hint">点一下屏幕吧～</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor(x, y, color, velocity) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.velocity = velocity;
+                this.alpha = 1;
+                this.friction = 0.96;
+            }
+            draw() {
+                ctx.save();
+                const currentAlpha = Math.max(0, this.alpha);
+                ctx.globalAlpha = currentAlpha;
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15 * currentAlpha; 
+                ctx.shadowColor = this.color;
+                
+                ctx.fill();
+                ctx.restore();
+            }
+            update() {
+                this.velocity.x *= this.friction;
+                this.velocity.y *= this.friction;
+                this.velocity.y += 0.05; 
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= 0.012;
+            }
+        }
+
+        function createFirework(x, y) {
+            const count = 80;
+            const angleIncrement = (Math.PI * 2) / count;
+            const colors = ['#f7e7ce', '#FFD700', '#00FFFF', '#FF69B4', '#FFFFFF'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            for (let i = 0; i < count; i++) {
+                const speed = Math.random() * 7 + 3;
+                particles.push(new Particle(x, y, color, {
+                    x: Math.cos(angleIncrement * i) * speed,
+                    y: Math.sin(angleIncrement * i) * speed
+                }));
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach((p, i) => {
+                if (p.alpha > 0.01) {
+                    p.update();
+                    p.draw();
+                } else {
+                    particles.splice(i, 1);
+                }
+            });
+        }
+
+        window.addEventListener('mousedown', (e) => createFirework(e.clientX, e.clientY));
+        window.addEventListener('touchstart', (e) => {
+            createFirework(e.touches[0].clientX, e.touches[0].clientY);
+        }, {passive: true});
+
+        setInterval(() => {
+            createFirework(Math.random() * canvas.width, Math.random() * canvas.height * 0.5);
+        }, 1200);
+
+        animate();
+    </script>
+</body>
+</html>
